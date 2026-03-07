@@ -10,8 +10,8 @@ body {
   max-height: 600px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   font-size: 14px;
-  color: #1e1e1e;
-  background: #fff;
+  color: #e0e0e0;
+  background: #1e1e1e;
 }
 
 .container {
@@ -27,7 +27,7 @@ body {
 .spinner {
   width: 40px;
   height: 40px;
-  border: 4px solid #f3f3f3;
+  border: 4px solid #404040;
   border-top: 4px solid #1db954;
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -42,8 +42,9 @@ body {
 /* Header */
 .header {
   padding: 16px 20px;
-  background: linear-gradient(135deg, #1db954 0%, #1ed760 100%);
+  background: linear-gradient(135deg, #1db954 0%, #1aa34a 100%);
   color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .header h2 {
@@ -66,9 +67,10 @@ body {
   align-items: center;
   gap: 8px;
   padding: 10px 20px;
-  background: #f8f9fa;
-  border-bottom: 1px solid #e9ecef;
+  background: #2a2a2a;
+  border-bottom: 1px solid #404040;
   font-size: 12px;
+  color: #b3b3b3;
 }
 
 .status-dot {
@@ -100,7 +102,8 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 12px 20px;
-  border-bottom: 1px solid #e9ecef;
+  border-bottom: 1px solid #404040;
+  background: #252525;
 }
 
 /* Buttons */
@@ -130,13 +133,14 @@ body {
 }
 
 .btn-secondary {
-  background: #f8f9fa;
-  color: #495057;
-  border: 1px solid #dee2e6;
+  background: #3a3a3a;
+  color: #e0e0e0;
+  border: 1px solid #505050;
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: #e9ecef;
+  background: #454545;
+  border-color: #606060;
 }
 
 .btn-large {
@@ -165,6 +169,7 @@ body {
 .song-list-container {
   max-height: 400px;
   overflow-y: auto;
+  background: #1e1e1e;
 }
 
 .song-list {
@@ -172,7 +177,7 @@ body {
 }
 
 .song-item {
-  border-bottom: 1px solid #f1f3f4;
+  border-bottom: 1px solid #353535;
 }
 
 .song-checkbox {
@@ -181,12 +186,14 @@ body {
   padding: 12px 0;
   cursor: pointer;
   align-items: flex-start;
+  transition: background 0.15s ease;
 }
 
 .song-checkbox:hover {
-  background: #f8f9fa;
+  background: #2a2a2a;
   margin: 0 -12px;
   padding: 12px;
+  border-radius: 6px;
 }
 
 .song-checkbox input[type="checkbox"] {
@@ -208,11 +215,12 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: #ffffff;
 }
 
 .song-meta {
   font-size: 12px;
-  color: #6c757d;
+  color: #9a9a9a;
   display: flex;
   gap: 8px;
   white-space: nowrap;
@@ -221,13 +229,13 @@ body {
 }
 
 .duration {
-  color: #adb5bd;
+  color: #707070;
 }
 
 .empty-state {
   padding: 40px 20px;
   text-align: center;
-  color: #6c757d;
+  color: #9a9a9a;
 }
 
 /* Progress */
@@ -249,7 +257,7 @@ body {
 
 .progress-bar {
   height: 8px;
-  background: #f1f3f4;
+  background: #353535;
   margin: 0 20px 20px;
   border-radius: 4px;
   overflow: hidden;
@@ -264,19 +272,21 @@ body {
 
 .current-song {
   padding: 12px 20px;
-  background: #f8f9fa;
+  background: #2a2a2a;
   border-left: 3px solid #1db954;
   margin: 0 20px 16px;
   font-size: 13px;
-  color: #495057;
+  color: #e0e0e0;
   min-height: 42px;
+  border-radius: 4px;
 }
 
 .progress-details {
   display: flex;
   justify-content: space-around;
   padding: 16px 20px;
-  border-top: 1px solid #e9ecef;
+  border-top: 1px solid #404040;
+  background: #252525;
 }
 
 .detail-item {
@@ -286,7 +296,7 @@ body {
 .detail-item .label {
   display: block;
   font-size: 12px;
-  color: #6c757d;
+  color: #9a9a9a;
   margin-bottom: 4px;
 }
 
@@ -299,12 +309,14 @@ body {
 /* Results */
 #results-container {
   padding: 20px;
+  background: #1e1e1e;
 }
 
 #results-container h3 {
   font-size: 18px;
   margin-bottom: 20px;
   text-align: center;
+  color: #ffffff;
 }
 
 .results-summary {
@@ -321,13 +333,13 @@ body {
 }
 
 .result-stat.success {
-  background: #d4edda;
-  border: 1px solid #c3e6cb;
+  background: #1e3a1e;
+  border: 1px solid #2d5a2d;
 }
 
 .result-stat.failed {
-  background: #f8d7da;
-  border: 1px solid #f5c6cb;
+  background: #3a1e1e;
+  border: 1px solid #5a2d2d;
 }
 
 .stat-number {
@@ -337,11 +349,11 @@ body {
 }
 
 .result-stat.success .stat-number {
-  color: #155724;
+  color: #4ade80;
 }
 
 .result-stat.failed .stat-number {
-  color: #721c24;
+  color: #f87171;
 }
 
 .stat-label {
@@ -352,17 +364,18 @@ body {
 }
 
 .result-stat.success .stat-label {
-  color: #155724;
+  color: #86efac;
 }
 
 .result-stat.failed .stat-label {
-  color: #721c24;
+  color: #fca5a5;
 }
 
 .failed-list {
   margin-bottom: 20px;
   padding: 16px;
-  background: #f8f9fa;
+  background: #2a2a2a;
+  border: 1px solid #404040;
   border-radius: 8px;
   max-height: 200px;
   overflow-y: auto;
@@ -371,7 +384,7 @@ body {
 .failed-list h4 {
   font-size: 14px;
   margin-bottom: 12px;
-  color: #721c24;
+  color: #f87171;
 }
 
 .failed-list ul {
@@ -381,8 +394,9 @@ body {
 
 .failed-list li {
   padding: 8px 0;
-  border-bottom: 1px solid #dee2e6;
+  border-bottom: 1px solid #404040;
   font-size: 12px;
+  color: #b3b3b3;
 }
 
 .failed-list li:last-child {
@@ -410,11 +424,11 @@ body {
 #error h3 {
   font-size: 18px;
   margin-bottom: 8px;
-  color: #dc3545;
+  color: #f87171;
 }
 
 #error p {
-  color: #6c757d;
+  color: #b3b3b3;
   margin-bottom: 20px;
   line-height: 1.5;
 }
@@ -425,14 +439,14 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: #252525;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #adb5bd;
+  background: #505050;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #6c757d;
+  background: #606060;
 }
