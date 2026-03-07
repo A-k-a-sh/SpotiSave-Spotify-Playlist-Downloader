@@ -1,2 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+env/
+venv/
+
+# Node
+node_modules/
+npm-debug.log
+
+# Downloads folder
+Backend/downloads/
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# IDE
+.vscode/
+.idea/
+
+# Old files kept for reference
 YT-DLP_IMPLEMENTATION_GUIDE
 .github

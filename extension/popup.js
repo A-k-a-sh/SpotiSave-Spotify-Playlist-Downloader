@@ -10,6 +10,8 @@ let allSongs = [];
 let selectedSongs = [];
 let currentQueueId = null;
 let pollTimer = null;
+let isLikedSongsPage = false;
+let isFirstLoad = true;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', init);
@@ -21,7 +23,7 @@ async function init() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   
   const isPlaylistPage = tab.url && tab.url.includes('open.spotify.com/playlist/');
-  const isLikedSongsPage = tab.url && tab.url.includes('open.spotify.com/collection/tracks');
+  isLikedSongsPage = tab.url && tab.url.includes('open.spotify.com/collection/tracks');
   
   if (!isPlaylistPage && !isLikedSongsPage) {
     showError(
@@ -89,10 +91,39 @@ async function getSongs() {
     const response = await chrome.tabs.sendMessage(tab.id, { action: 'GET_SONGS' });
     
     if (response.success) {
-      allSongs = response.tracks;
+      let scrapedTracks = response.tracks;
+      
+      // Drop last 10 songs (recommendations) for regular playlists
+      // Keep all for Liked Songs (no recommendations there)
+      if (!isLikedSongsPage && scrapedTracks.length > 10) {
+        scrapedTracks = scrapedTracks.slice(0, -10);
+        console.log(`[Popup] Dropped last 10 recommended songs. Kept ${scrapedTracks.length} playlist songs.`);
+      }
+      
+      // Deduplicate: only add songs not already in allSongs
+      const existingKeys = new Set(allSongs.map(s => `${s.title}|||${s.artists}`));
+      const newSongs = scrapedTracks.filter(track => {
+        const key = `${track.title}|||${track.artists}`;
+        return !existingKeys.has(key);
+      });
+      
+      // Merge new songs with existing
+      const previousCount = allSongs.length;
+      allSongs = [...allSongs, ...newSongs];
+      
+      console.log(`[Popup] Added ${newSongs.length} new songs. Total: ${allSongs.length}`);
+      
+      // Update display
       displaySongs(allSongs);
       document.getElementById('playlist-name').textContent = response.playlistName || 'Playlist';
       document.getElementById('song-count').textContent = `${allSongs.length} songs`;
+      
+      // Update button text after first successful load
+      if (isFirstLoad) {
+        document.getElementById('get-songs-btn').textContent = 'Add More Songs';
+        isFirstLoad = false;
+      }
+      
       showMain();
     } else {
       showError('Failed to Extract Songs', response.error || 'Unknown error');
