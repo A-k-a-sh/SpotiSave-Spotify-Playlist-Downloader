@@ -78,20 +78,31 @@ function getPlaylistName() {
     return 'Liked Songs';
   }
   
-  // Try multiple selectors for playlist title
-  const selectors = [
-    'h1[data-encore-id="text"]',
-    'h1.main-type-canon',
-    'span[data-encore-id="text"][dir="auto"]'
-  ];
+  // Primary selector - most common in current web player
+  const h1 = document.querySelector('h1[data-testid="playlist-title"]');
+  if (h1) return h1.textContent.trim();
+
+  // Fallback 1 - very common alternative
+  const titleEl = document.querySelector('h1[data-encore-id="text"]') ||
+                  document.querySelector('span[data-encore-id="text"] h1') ||
+                  document.querySelector('h1');
   
-  for (const selector of selectors) {
-    const element = document.querySelector(selector);
-    if (element && element.textContent.trim()) {
-      return element.textContent.trim();
+  if (titleEl) {
+    const text = titleEl.textContent.trim();
+    // Clean up common extra text like "Playlist • 89 songs"
+    return text.split(' •')[0].trim() || text;
+  }
+
+  // Fallback 2 - look for the biggest heading in main content
+  const main = document.querySelector('main') || document.body;
+  const headings = main.querySelectorAll('h1, h2');
+  for (const el of headings) {
+    const t = el.textContent.trim();
+    if (t && t.length > 3 && !t.includes('songs') && !t.includes('followers')) {
+      return t;
     }
   }
-  
+
   return 'Spotify Playlist';
 }
 
