@@ -3,6 +3,7 @@ const cors = require('cors');
 const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
+const archiver = require('archiver');
 
 const app = express();
 const PORT = 3000;
@@ -32,7 +33,7 @@ app.get('/health', (req, res) => {
 
 // Start download queue
 app.post('/download', async (req, res) => {
-  const { songs } = req.body;
+  const { songs, playlistName } = req.body;
 
   // Validate input
   if (!songs || !Array.isArray(songs) || songs.length === 0) {
@@ -53,11 +54,13 @@ app.post('/download', async (req, res) => {
   const queueId = generateQueueId();
   const queue = {
     songs,
+    playlistName: playlistName || 'Spotify Playlist',
     completed: 0,
     total: songs.length,
     current: '',
     failed: [],
-    success: []
+    success: [],
+    zipFile: null
   };
 
   downloadQueues.set(queueId, queue);
@@ -90,7 +93,8 @@ app.get('/progress/:queueId', (req, res) => {
     current: queue.current,
     failed: queue.failed,
     success: queue.success,
-    isComplete: queue.completed === queue.total
+    isComplete: queue.completed === queue.total,
+    zipFile: queue.zipFile
   });
 });
 
@@ -155,13 +159,71 @@ async function processQueue(queueId) {
       ? 'All downloads complete' 
       : queue.current;
 
-    // Small delay between downloads to avoid rate limiting
+    // Delay between downloads to avoid rate limiting (increased to 2 seconds)
     if (queue.completed < queue.total) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 2000));
     }
   }
 
+  
+  // Create zip file if there are successful downloads
+  if (queue.success.length > 0) {
+    try {
+      queue.current = 'Creating zip file...';
+      const zipPath = await createZipFile(queue, queueId);
+      queue.zipFile = zipPath;
+      queue.current = `All complete! Zip file: ${path.basename(zipPath)}`;
+      console.log(`✓ Created zip: ${zipPath}`);
+    } catch (err) {
+      console.error(`✗ Failed to create zip: ${err.message}`);
+      queue.current = 'Downloads complete (zip failed)';
+    }
+  }
   console.log(`\nQueue ${queueId} complete: ${queue.success.length} succeeded, ${queue.failed.length} failed`);
+}
+
+// Create zip file from successful downloads
+function createZipFile(queue, queueId) {
+  return new Promise((resolve, reject) => {
+    // Sanitize playlist name for filename
+    const sanitizedName = queue.playlistName
+      .replace(/[^a-z0-9]/gi, '_')
+      .replace(/_+/g, '_')
+      .substring(0, 50);
+    
+    const zipFileName = `${sanitizedName}_${queueId}.zip`;
+    const zipPath = path.join(DOWNLOADS_FOLDER, zipFileName);
+    
+    const output = fs.createWriteStream(zipPath);
+    const archive = archiver('zip', { zlib: { level: 9 } });
+    
+    output.on('close', () => {
+      resolve(zipFileName);
+    });
+    
+    archive.on('error', (err) => {
+      reject(err);
+    });
+    
+    archive.pipe(output);
+    
+    // Add each successful download to zip
+    let filesAdded = 0;
+    queue.success.forEach(song => {
+      const filePath = path.join(DOWNLOADS_FOLDER, song.file);
+      if (fs.existsSync(filePath)) {
+        archive.file(filePath, { name: song.file });
+        filesAdded++;
+        console.log(`  ✓ Adding to zip: ${song.file}`);
+      } else {
+        console.log(`  ✗ File not found: ${song.file}`);
+      }
+    });
+    
+    console.log(`  → Total files added to zip: ${filesAdded}/${queue.success.length}`);
+    
+    archive.finalize();
+  });
 }
 
 // Download single song using Python script

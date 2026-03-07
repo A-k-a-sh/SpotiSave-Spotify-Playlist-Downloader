@@ -41,49 +41,131 @@ def download_song(title, artists, output_folder='./downloads'):
     # Ensure output folder exists
     os.makedirs(output_folder, exist_ok=True)
     
-    # Construct search query - ytsearch1 returns only best match
-    query = f'ytsearch1:{title} {artists} audio'
+    # Construct search query - ytsearch3 returns top 3 results for fallback
+    query = f'ytsearch3:{title} {artists} audio'
     
-    # yt-dlp options
-    ydl_opts = {
-        'format': 'bestaudio/best',  # Best audio quality (m4a/opus, no FFmpeg needed)
-        'outtmpl': f'{output_folder}/%(title)s.%(ext)s',  # Output filename template
-        'quiet': True,  # Suppress progress output
-        'no_warnings': True,  # Suppress warnings
-        'logger': SilentLogger(),  # Custom logger to suppress debug/warning
-        'extract_flat': False,  # We need full info, not just metadata
-        'socket_timeout': 30,  # Network timeout
-        'retries': 3,  # Retry on failure
+    # Track the downloaded filename
+    downloaded_file = None
+    
+    def progress_hook(d):
+        nonlocal downloaded_file
+        if d['status'] == 'finished':
+            downloaded_file = d['filename']
+    
+    # yt-dlp options for search (don't download yet)
+    search_opts = {
+        'quiet': True,
+        'no_warnings': True,
+        'logger': SilentLogger(),
+        'extract_flat': 'in_playlist',  # Don't download, just get info
+        'socket_timeout': 30,
+    }
+    
+    # yt-dlp options for actual download
+    download_opts = {
+        'format': 'bestaudio[ext=m4a]/bestaudio',  # Audio only, no video
+        'outtmpl': f'{output_folder}/%(title)s.%(ext)s',
+        'quiet': True,
+        'no_warnings': True,
+        'logger': SilentLogger(),
+        'socket_timeout': 30,
+        'retries': 3,
+        'progress_hooks': [progress_hook],
     }
     
     try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            # First, get info without downloading to get the actual filename
-            info = ydl.extract_info(query, download=False)
+        # First, search for top 3 results without downloading
+        with yt_dlp.YoutubeDL(search_opts) as ydl:
+            search_info = ydl.extract_info(query, download=False)
             
-            if not info:
+            if not search_info or 'entries' not in search_info:
                 return {
                     'success': False,
                     'error': 'No results found on YouTube'
                 }
             
-            # Get the actual filename (handles sanitization, duplicates, etc.)
-            filename = ydl.prepare_filename(info)
-            basename = os.path.basename(filename)
+            entries = [e for e in search_info['entries'] if e]  # Filter out None
             
-            # Now download
-            ydl.download([query])
+            if not entries:
+                return {
+                    'success': False,
+                    'error': 'No valid results found on YouTube'
+                }
+        
+        # Try downloading from each result until one succeeds
+        last_error = None
+        
+        for idx, entry in enumerate(entries[:3], 1):  # Try top 3 results
+            try:
+                video_url = entry.get('url') or entry.get('webpage_url') or entry.get('id')
+                
+                if not video_url:
+                    continue
+                
+                # If we only have ID, construct URL
+                if not video_url.startswith('http'):
+                    video_url = f'https://www.youtube.com/watch?v={video_url}'
+                
+                # Reset downloaded_file for this attempt
+                downloaded_file = None
+                
+                # Try to download from this result
+                with yt_dlp.YoutubeDL(download_opts) as ydl:
+                    ydl.download([video_url])
+                    
+                    # Check if file was downloaded
+                    if downloaded_file and os.path.exists(downloaded_file):
+                        basename = os.path.basename(downloaded_file)
+                        print(f"Success on result #{idx}", file=sys.stderr)
+                        return {
+                            'success': True,
+                            'file': basename,
+                            'error': None
+                        }
             
-            return {
-                'success': True,
-                'file': basename,
-                'error': None
-            }
+            except yt_dlp.utils.DownloadError as e:
+                last_error = str(e)
+                print(f"Result #{idx} failed: {last_error[:50]}", file=sys.stderr)
+                continue  # Try next result
             
-    except Exception as e:
+            except Exception as e:
+                last_error = str(e)
+                print(f"Result #{idx} error: {last_error[:50]}", file=sys.stderr)
+                continue
+        
+        # All attempts failed
         return {
             'success': False,
-            'error': str(e),
+            'error': f'All 3 results failed. Last error: {last_error[:100] if last_error else "No audio available"}'
+        }
+            
+    except yt_dlp.utils.DownloadError as e:
+        # Specific yt-dlp download errors (403, format not available, etc.)
+        error_msg = str(e)
+        if '403' in error_msg:
+            return {
+                'success': False,
+                'error': 'YouTube blocked (403) - Video may be restricted',
+                'file': None
+            }
+        elif 'format' in error_msg.lower():
+            return {
+                'success': False,
+                'error': 'Audio format not available for this video',
+                'file': None
+            }
+        else:
+            return {
+                'success': False,
+                'error': f'Download failed: {error_msg[:100]}',
+                'file': None
+            }
+    
+    except Exception as e:
+        # Catch-all for other errors
+        return {
+            'success': False,
+            'error': f'Unexpected error: {str(e)[:100]}',
             'file': None
         }
 

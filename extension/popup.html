@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spotify Downloader</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Loading state -->
+    <div id="loading" class="container">
+      <div class="spinner"></div>
+      <p>Loading...</p>
+    </div>
+
+    <!-- Error state -->
+    <div id="error" class="container hidden">
+      <div class="error-icon">⚠️</div>
+      <h3 id="error-title">Error</h3>
+      <p id="error-message"></p>
+      <button id="retry-btn" class="btn btn-primary">Retry</button>
+    </div>
+
+    <!-- Main app -->
+    <div id="main" class="hidden">
+      <!-- Header -->
+      <div class="header">
+        <h2 id="playlist-name">Playlist</h2>
+        <p class="subtitle" id="song-count">0 songs</p>
+      </div>
+
+      <!-- Backend status -->
+      <div id="backend-status" class="status-bar hidden">
+        <span class="status-dot"></span>
+        <span id="status-text">Checking backend...</span>
+      </div>
+
+      <!-- Song list -->
+      <div id="song-list-container" class="song-list-container">
+        <div class="controls">
+          <label class="checkbox-label">
+            <input type="checkbox" id="select-all">
+            <span>Select All (<span id="selected-count">0</span> selected)</span>
+          </label>
+          <button id="get-songs-btn" class="btn btn-secondary">Get Songs</button>
+        </div>
+        
+        <div id="song-list" class="song-list"></div>
+        
+        <button id="download-btn" class="btn btn-primary btn-large hidden" disabled>
+          Download Selected
+        </button>
+      </div>
+
+      <!-- Progress view -->
+      <div id="progress-container" class="hidden">
+        <div class="progress-header">
+          <h3>Downloading...</h3>
+          <p id="progress-text">0 / 0</p>
+        </div>
+        
+        <div class="progress-bar">
+          <div id="progress-fill" class="progress-fill"></div>
+        </div>
+        
+        <div id="current-song" class="current-song"></div>
+        
+        <div id="progress-details" class="progress-details">
+          <div class="detail-item">
+            <span class="label">Success:</span>
+            <span id="success-count">0</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Failed:</span>
+            <span id="failed-count">0</span>
+          </div>
+        </div>
+        
+        <button id="view-results-btn" class="btn btn-secondary hidden">View Results</button>
+      </div>
+
+      <!-- Results view -->
+      <div id="results-container" class="hidden">
+        <h3>Download Complete</h3>
+        <div class="results-summary">
+          <div class="result-stat success">
+            <div class="stat-number" id="final-success">0</div>
+            <div class="stat-label">Successful</div>
+          </div>
+          <div class="result-stat failed">
+            <div class="stat-number" id="final-failed">0</div>
+            <div class="stat-label">Failed</div>
+          </div>
+        </div>
+        
+        <div id="failed-list" class="failed-list hidden">
+          <h4>Failed Downloads:</h4>
+          <ul id="failed-items"></ul>
+        </div>
+        
+        <div class="results-actions">
+          <button id="open-folder-btn" class="btn btn-secondary">Open Downloads Folder</button>
+          <button id="back-btn" class="btn btn-primary">Back to List</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
