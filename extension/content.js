@@ -73,36 +73,37 @@ function extractSpotifyPlaylistTracks() {
 
 // Get playlist name from page
 function getPlaylistName() {
+  // Use document.title - most reliable method
+  const rawTitle = document.title;
+  
+  console.log('[Spotify Downloader] Raw title:', rawTitle);
+  
   // Check if it's Liked Songs page
-  if (window.location.href.includes('/collection/tracks')) {
+  if (window.location.href.includes('/collection/tracks') || rawTitle.includes('Liked Songs')) {
     return 'Liked Songs';
   }
   
-  // Primary selector - most common in current web player
-  const h1 = document.querySelector('h1[data-testid="playlist-title"]');
-  if (h1) return h1.textContent.trim();
-
-  // Fallback 1 - very common alternative
-  const titleEl = document.querySelector('h1[data-encore-id="text"]') ||
-                  document.querySelector('span[data-encore-id="text"] h1') ||
-                  document.querySelector('h1');
-  
-  if (titleEl) {
-    const text = titleEl.textContent.trim();
-    // Clean up common extra text like "Playlist • 89 songs"
-    return text.split(' •')[0].trim() || text;
-  }
-
-  // Fallback 2 - look for the biggest heading in main content
-  const main = document.querySelector('main') || document.body;
-  const headings = main.querySelectorAll('h1, h2');
-  for (const el of headings) {
-    const t = el.textContent.trim();
-    if (t && t.length > 3 && !t.includes('songs') && !t.includes('followers')) {
-      return t;
+  // Parse title format: "Playlist Name - playlist by Owner | Spotify"
+  // or "Spotify – Liked Songs"
+  if (rawTitle) {
+    // Remove " | Spotify" suffix
+    let cleanTitle = rawTitle.replace(/\s*\|\s*Spotify\s*$/i, '');
+    
+    // Remove "Spotify – " prefix
+    cleanTitle = cleanTitle.replace(/^Spotify\s*[–-]\s*/i, '');
+    
+    // Remove " - playlist by Owner" suffix
+    cleanTitle = cleanTitle.replace(/\s*-\s*playlist\s+by\s+.+$/i, '');
+    
+    // Clean up extra whitespace
+    cleanTitle = cleanTitle.trim();
+    
+    if (cleanTitle && cleanTitle.length > 0) {
+      console.log('[Spotify Downloader] Extracted playlist name:', cleanTitle);
+      return cleanTitle;
     }
   }
-
+  
   return 'Spotify Playlist';
 }
 

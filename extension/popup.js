@@ -48,6 +48,7 @@ function setupEventListeners() {
   document.getElementById('select-all').addEventListener('click', toggleSelectAll);
   document.getElementById('download-btn').addEventListener('click', startDownload);
   document.getElementById('retry-btn').addEventListener('click', init);
+  document.getElementById('refresh-btn').addEventListener('click', refreshSpotifyPage);
   document.getElementById('back-btn').addEventListener('click', showSongList);
   document.getElementById('view-results-btn').addEventListener('click', showResults);
   document.getElementById('open-folder-btn').addEventListener('click', openDownloadsFolder);
@@ -347,6 +348,18 @@ async function showResults() {
 // Open downloads folder (informational)
 function openDownloadsFolder() {
   alert('Downloads are saved in:\nBackend/downloads/\n\nPlease open this folder manually from your file system.');
+}
+
+// Refresh Spotify page
+async function refreshSpotifyPage() {
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    chrome.tabs.reload(tab.id);
+    window.close(); // Close popup after refreshing
+  } catch (err) {
+    console.error('[Popup] Failed to refresh page:', err);
+    alert('Failed to refresh page. Please refresh manually.');
+  }
 }
 
 // Show/hide views
