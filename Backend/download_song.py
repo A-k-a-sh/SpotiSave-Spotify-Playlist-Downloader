@@ -175,15 +175,16 @@ def main():
     if len(sys.argv) < 3:
         print(json.dumps({
             'success': False,
-            'error': 'Usage: python3 download_song.py "title" "artists"'
+            'error': 'Usage: python3 download_song.py "title" "artists" [output_folder]'
         }), flush=True)
         sys.exit(1)
     
     title = sys.argv[1]
     artists = sys.argv[2]
+    output_folder = sys.argv[3] if len(sys.argv) > 3 else './downloads'
     
     # Download and get result
-    result = download_song(title, artists)
+    result = download_song(title, artists, output_folder)
     
     # Output JSON to stdout (flush=True ensures immediate output)
     print(json.dumps(result), flush=True)

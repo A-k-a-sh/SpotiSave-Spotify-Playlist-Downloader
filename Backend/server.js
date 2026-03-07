@@ -52,9 +52,24 @@ app.post('/download', async (req, res) => {
 
   // Create queue
   const queueId = generateQueueId();
+  
+  // Sanitize playlist name for folder
+  const sanitizedName = (playlistName || 'Spotify Playlist')
+    .replace(/[^a-z0-9]/gi, '_')
+    .replace(/_+/g, '_')
+    .substring(0, 50);
+  
+  // Create playlist-specific folder
+  const playlistFolder = path.join(DOWNLOADS_FOLDER, sanitizedName);
+  if (!fs.existsSync(playlistFolder)) {
+    fs.mkdirSync(playlistFolder, { recursive: true });
+  }
+  
   const queue = {
     songs,
     playlistName: playlistName || 'Spotify Playlist',
+    sanitizedName,
+    playlistFolder,
     completed: 0,
     total: songs.length,
     current: '',
@@ -122,13 +137,16 @@ async function processQueue(queueId) {
   const queue = downloadQueues.get(queueId);
   if (!queue) return;
 
+  console.log(`\nStarting download queue: ${queue.playlistName}`);
+  console.log(`Folder: ${queue.playlistFolder}\n`);
+
   for (const song of queue.songs) {
     queue.current = `Downloading: ${song.title} - ${song.artists}`;
     
     try {
       console.log(`[${queue.completed + 1}/${queue.total}] ${queue.current}`);
       
-      const result = await downloadSong(song.title, song.artists);
+      const result = await downloadSong(song.title, song.artists, queue.playlistFolder);
       
       if (result.success) {
         queue.success.push({
@@ -185,13 +203,8 @@ async function processQueue(queueId) {
 // Create zip file from successful downloads
 function createZipFile(queue, queueId) {
   return new Promise((resolve, reject) => {
-    // Sanitize playlist name for filename
-    const sanitizedName = queue.playlistName
-      .replace(/[^a-z0-9]/gi, '_')
-      .replace(/_+/g, '_')
-      .substring(0, 50);
-    
-    const zipFileName = `${sanitizedName}_${queueId}.zip`;
+    // Use sanitized playlist name for zip file
+    const zipFileName = `${queue.sanitizedName}.zip`;
     const zipPath = path.join(DOWNLOADS_FOLDER, zipFileName);
     
     const output = fs.createWriteStream(zipPath);
@@ -207,30 +220,24 @@ function createZipFile(queue, queueId) {
     
     archive.pipe(output);
     
-    // Add each successful download to zip
-    let filesAdded = 0;
-    queue.success.forEach(song => {
-      const filePath = path.join(DOWNLOADS_FOLDER, song.file);
-      if (fs.existsSync(filePath)) {
-        archive.file(filePath, { name: song.file });
-        filesAdded++;
-        console.log(`  ✓ Adding to zip: ${song.file}`);
-      } else {
-        console.log(`  ✗ File not found: ${song.file}`);
-      }
-    });
-    
-    console.log(`  → Total files added to zip: ${filesAdded}/${queue.success.length}`);
+    // Add entire playlist folder to zip
+    const folderExists = fs.existsSync(queue.playlistFolder);
+    if (folderExists) {
+      archive.directory(queue.playlistFolder, queue.sanitizedName);
+      console.log(`  ✓ Adding folder to zip: ${queue.sanitizedName}/ (${queue.success.length} files)`);
+    } else {
+      console.log(`  ✗ Folder not found: ${queue.playlistFolder}`);
+    }
     
     archive.finalize();
   });
 }
 
 // Download single song using Python script
-function downloadSong(title, artists) {
+function downloadSong(title, artists, outputFolder = DOWNLOADS_FOLDER) {
   return new Promise((resolve, reject) => {
     const pythonScript = path.join(__dirname, 'download_song.py');
-    const python = spawn('python3', [pythonScript, title, artists]);
+    const python = spawn('python3', [pythonScript, title, artists, outputFolder]);
 
     let stdout = '';
     let stderr = '';
