@@ -8,8 +8,34 @@ const archiver = require('archiver');
 const app = express();
 const PORT = 3000;
 
-// Detect Python command based on platform
-const PYTHON_CMD = process.platform === 'win32' ? 'python' : 'python3';
+// Python candidates to try in order (platform-aware)
+const PYTHON_CANDIDATES = process.platform === 'win32'
+  ? ['python', 'python3', 'py']   // 'py' = Windows Python Launcher (knows all installs)
+  : ['python3', 'python'];
+
+// Will be set at startup by detectPythonCmd()
+let PYTHON_CMD = PYTHON_CANDIDATES[0]; // fallback default
+
+// Test whether a given Python executable can import yt_dlp
+function testPythonCandidate(cmd) {
+  return new Promise((resolve) => {
+    const proc = spawn(cmd, ['-c', 'import yt_dlp; print("ok")'], { shell: false });
+    let out = '';
+    proc.stdout.on('data', d => { out += d.toString(); });
+    proc.on('close', code => resolve(code === 0 && out.trim() === 'ok'));
+    proc.on('error', () => resolve(false));
+    setTimeout(() => { proc.kill(); resolve(false); }, 5000);
+  });
+}
+
+// Find the first Python in the candidate list that has yt_dlp installed
+async function detectPythonCmd() {
+  for (const cmd of PYTHON_CANDIDATES) {
+    const ok = await testPythonCandidate(cmd);
+    if (ok) return cmd;
+  }
+  return null;
+}
 
 // Middleware
 app.use(cors()); // Allow all origins (extension will have unique ID)
@@ -274,14 +300,29 @@ function downloadSong(title, artists, outputFolder = DOWNLOADS_FOLDER) {
   });
 }
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`\n🚀 Backend server running on http://localhost:${PORT}`);
-  console.log(`📁 Downloads folder: ${DOWNLOADS_FOLDER}`);
-  console.log(`🐍 Python command: ${PYTHON_CMD}`);
-  console.log(`\nEndpoints:`);
-  console.log(`  GET  /health`);
-  console.log(`  POST /download`);
-  console.log(`  GET  /progress/:queueId`);
-  console.log(`  GET  /files\n`);
-});
+// Start server after detecting the correct Python
+async function startServer() {
+  console.log('🔍 Detecting Python with yt-dlp...');
+  const found = await detectPythonCmd();
+  if (found) {
+    PYTHON_CMD = found;
+    console.log(`🐍 Found: ${PYTHON_CMD}`);
+  } else {
+    console.warn(`⚠️  No Python with yt-dlp found! Tried: ${PYTHON_CANDIDATES.join(', ')}`);
+    console.warn('   Fix: pip install yt-dlp   (or pip3 install yt-dlp)');
+    console.warn('   Server will start but downloads will fail until yt-dlp is installed.\n');
+  }
+
+  app.listen(PORT, () => {
+    console.log(`\n🚀 Backend server running on http://localhost:${PORT}`);
+    console.log(`📁 Downloads folder: ${DOWNLOADS_FOLDER}`);
+    console.log(`🐍 Python command: ${PYTHON_CMD}`);
+    console.log(`\nEndpoints:`);
+    console.log(`  GET  /health`);
+    console.log(`  POST /download`);
+    console.log(`  GET  /progress/:queueId`);
+    console.log(`  GET  /files\n`);
+  });
+}
+
+startServer();
