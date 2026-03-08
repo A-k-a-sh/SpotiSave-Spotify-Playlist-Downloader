@@ -8,6 +8,9 @@ const archiver = require('archiver');
 const app = express();
 const PORT = 3000;
 
+// Detect Python command based on platform
+const PYTHON_CMD = process.platform === 'win32' ? 'python' : 'python3';
+
 // Middleware
 app.use(cors()); // Allow all origins (extension will have unique ID)
 app.use(express.json());
@@ -237,7 +240,7 @@ function createZipFile(queue, queueId) {
 function downloadSong(title, artists, outputFolder = DOWNLOADS_FOLDER) {
   return new Promise((resolve, reject) => {
     const pythonScript = path.join(__dirname, 'download_song.py');
-    const python = spawn('python3', [pythonScript, title, artists, outputFolder]);
+    const python = spawn(PYTHON_CMD, [pythonScript, title, artists, outputFolder]);
 
     let stdout = '';
     let stderr = '';
@@ -275,6 +278,7 @@ function downloadSong(title, artists, outputFolder = DOWNLOADS_FOLDER) {
 app.listen(PORT, () => {
   console.log(`\n🚀 Backend server running on http://localhost:${PORT}`);
   console.log(`📁 Downloads folder: ${DOWNLOADS_FOLDER}`);
+  console.log(`🐍 Python command: ${PYTHON_CMD}`);
   console.log(`\nEndpoints:`);
   console.log(`  GET  /health`);
   console.log(`  POST /download`);
