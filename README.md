@@ -324,6 +324,13 @@ This project is for educational purposes. Users are responsible for ensuring the
 - Check server is listening on port 3000
 - Verify no firewall blocking localhost connections
 
+### "python was not found" error (Windows)
+- Install Python from [python.org](https://www.python.org/downloads/)
+- During installation, check "Add Python to PATH"
+- Restart terminal/command prompt after installation
+- Verify: `python --version` should show Python 3.7+
+- If still failing, try `py` command instead (some Windows installations use this)
+
 ### No songs extracted
 - Manually scroll through entire playlist first
 - Refresh Spotify page and try again
